@@ -32,8 +32,11 @@ Run the provided Python script to start the game.
 Interactive Gameplay: Engage in chess matches against a robotic arm, offering a unique blend of technology and traditional gameplay.
 Adjustable Difficulty Levels: Whether you're a beginner or a seasoned player, challenge yourself with various difficulty settings.
 Educational Experience: Learn from each move, with the robotic arm serving as both an opponent and a teacher.
-![WhatsApp Image 2024-02-07 at 21 04 23](https://github.com/ahmadgh99/RoboticChess/assets/125828484/991ef284-4136-4907-9183-ab1ccc7f21f7)
-![WhatsApp Image 2024-02-07 at 21 04 24](https://github.com/ahmadgh99/RoboticChess/assets/125828484/664e4b29-a51e-4231-bac0-68ea7ddc900a)
+
+
+<img src="https://github.com/ahmadgh99/RoboticChess/assets/125828484/991ef284-4136-4907-9183-ab1ccc7f21f7" width="50%">
+<img src="https://github.com/ahmadgh99/RoboticChess/assets/125828484/664e4b29-a51e-4231-bac0-68ea7ddc900a" width="50%">
+
 
 
 # Contributing
@@ -51,3 +54,4 @@ Special thanks to everyone who contributed to making this project a reality.
 For inquiries or further information, please reach out:
 
 Ghanayem Muhammad - ghanayem.muh@gmail.com
+Ghanayem Ahmad - ahmad.gh.99@hotmail.com
