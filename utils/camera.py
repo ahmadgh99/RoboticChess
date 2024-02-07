@@ -31,3 +31,6 @@ class Camera:
         if not depth_frame:
             return None
         return np.asanyarray(depth_frame.get_data())
+        
+    def quit(self):
+        self.pipeline.stop()

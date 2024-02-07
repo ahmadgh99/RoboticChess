@@ -2,12 +2,15 @@ import cv2
 import numpy as np
 import utilites as uts
 
+filepath = "/Users/ahmadghanayem/Desktop/Technion/Project 2/utils/"
+
 class ImageProcessor:
     def __init__(self):
         self.warped_frame = None
         self.roi_mask = None
         self.cleaned_mask_cc = None
         self.img_rgb = None
+        self.prev_warped = None
 
     def get_warped(self):
         # Implementation of get_warped function
@@ -16,12 +19,33 @@ class ImageProcessor:
     def initial_detect(self):
         # Implementation of initial_detect function
         # This method should also store masks in self.masks
-        self.roi_mask, self.cleaned_mask_cc = get_masks(self.img_rgb)
+        self.load_masks()
+        if self.roi_mask is None or self.cleaned_mask_cc is None:
+            self.roi_mask, self.cleaned_mask_cc = get_masks(self.img_rgb)
 
     def detect_chessboard(self):
         # Implementation of detect_chessboard function
-        self.warped_frame = warp_frame(self.img_rgb,self.roi_mask,self.cleaned_mask_cc)
+        try:
+            self.warped_frame = warp_frame(self.img_rgb,self.roi_mask,self.cleaned_mask_cc)
+        except cv2.error as e:
+            self.wraped_frame = None
+        return True if self.warped_frame is not None else False
+        
+    def save_masks(self):
+        global filepath
+        # Save the masks to a specified file
+        np.save(filepath + '_roi_mask.npy', self.roi_mask)
+        np.save(filepath + '_cleaned_mask_cc.npy', self.cleaned_mask_cc)
 
+    def load_masks(self):
+        global filepath
+        # Loads the masks to a specified file
+        try:
+            self.roi_mask = np.load(filepath + '_roi_mask.npy')
+            self.cleaned_mask_cc = np.load(filepath + '_cleaned_mask_cc.npy')
+        except FileNotFoundError:
+            self.roi_mask = None
+            self.cleaned_mask_cc = None
 
 
 
@@ -212,7 +236,8 @@ def color_squares(square_num):
 
 # Y-value-based corner ordering function
 def y_based_order_corners(pts):
-
+    if None in pts:
+        return None
     # Convert the input format to a list of 2D points
     converted_pts = [tuple(point[0]) for point in pts]
 
@@ -253,18 +278,7 @@ def detect_circles(self, squares, img):
     """
     circle_results = {}
 
-    def refined_dominant_color(region, sample_radius):
-        """Determine the dominant color by counting white and black pixels 
-        within a sample circle in the center of the region."""
-        center_y, center_x = region.shape[0] // 2, region.shape[1] // 2
-        Y, X = np.ogrid[:region.shape[0], :region.shape[1]]
-        mask = (X - center_x)**2 + (Y - center_y)**2 <= sample_radius**2
-        sample_pixels = region[mask]
-
-        white_count = np.sum(sample_pixels > 127)
-        black_count = len(sample_pixels) - white_count
-        # Return the opposite color
-        return "Black" if white_count > black_count else "White"
+	# Determine the dominant color using the refined method
 
     for square_name, points in squares.items():
         # Extract the square region from the image
@@ -282,7 +296,7 @@ def detect_circles(self, squares, img):
 
         # Detect circles in the square
         circles = cv2.HoughCircles(gray_square, cv2.HOUGH_GRADIENT, dp=1, minDist=20,
-                                   param1=50, param2=30, minRadius=5, maxRadius=25)
+                                   param1=50, param2=30, minRadius=13, maxRadius=25)
 
         if circles is not None:
             # If a circle is detected, extract the circle region
@@ -291,14 +305,90 @@ def detect_circles(self, squares, img):
             
             # Draw the detected circle
             cv2.circle(img, (x_start + x, y_start + y), r, (0, 255, 0), 2)
+            
 
-            # Determine the dominant color using the refined method
-            dominant_color = refined_dominant_color(circle_region, r // 10)
-
-            circle_results[square_name] = [True, dominant_color]
+            circle_results[square_name] = True
         else:
-            circle_results[square_name] = [False, None]
+            circle_results[square_name] = False
 
     return circle_results
 
 
+def detect_calib_circles(frame):
+    """
+    Detects up to two circles in the provided frame and returns their center coordinates.
+
+    Parameters:
+    - frame: The image frame in which to detect circles.
+
+    Returns:
+    - A list of (x, y) coordinates of the centers of up to two detected circles, otherwise None.
+    """
+    # Convert the frame to grayscale
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+
+    # Apply Hough Circle Detection
+    circles = cv2.HoughCircles(gray_frame, cv2.HOUGH_GRADIENT, dp=1, minDist=20,
+                               param1=50, param2=20, minRadius=5, maxRadius=16)
+
+    if circles is not None:
+        circles = np.round(circles[0, :]).astype("int")
+        
+        # To store the center coordinates of the circles
+        centers = []
+
+        # Iterate through detected circles (up to 2 circles)
+        for i, (x, y, r) in enumerate(circles[:2]):
+            # Draw the circle
+            cv2.circle(frame, (x, y), r, (0, 255, 0), 2)
+
+            # Draw a label above the circle
+            label = f"Radius: {r}"
+            cv2.putText(frame, label, (x - 10, y - r - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+
+            # Append the center to the list
+            centers.append((x, y, r))
+
+        return centers
+    else:
+        return None
+        
+
+def calculate_average_scale_factor(centers, physical_radius):
+    """
+    Calculates the average scale factor based on the detected radii and the known physical radius.
+
+    Parameters:
+    - centers: A list of tuples, each containing (x, y, r) of detected circles.
+    - physical_radius: The known physical radius of the dots in millimeters.
+
+    Returns:
+    - The average scale factor in terms of mm/pixel.
+    """
+    if not centers or len(centers) == 0:
+        return None
+
+    radius = centers[0][2]
+    scale_factor = physical_radius / radius  # Calculate scale factor for each circle
+    return scale_factor
+    
+    def get_arm_pos(frame):
+        circles = ip.detect_calib_circles(frame)
+        if circles is None or len(circles) != 2:
+            return None
+        avg_sf = ip.calculate_average_scale_factor(circles,25)
+        circles.sort(key=lambda x: x[1])
+        constant_dot, movable_dot = circles[:2]
+        constant_dot_converted = [constant_dot[1], constant_dot[0] * avg_sf]  # Swap and scale
+        movable_dot_converted = [movable_dot[1], movable_dot[0] * avg_sf]     # Swap and scale
+
+        # Relative position (movable - constant)
+        relative_position = [movable_dot_converted[0] - constant_dot_converted[0],
+        movable_dot_converted[1] - constant_dot_converted[1]]
+
+        # Step 5: Calculate Arm's Movement
+        # Assuming you have predefined values to reach the constant dot
+        arm_movement_to_constant = [87, 0]  # Replace with your actual values
+        arm_movement_to_movable = [arm_movement_to_constant[0] + relative_position[0],
+        arm_movement_to_constant[1] + relative_position[1]]
+        return arm_movement_to_movable
