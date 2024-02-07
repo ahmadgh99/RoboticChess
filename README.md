@@ -1,6 +1,15 @@
 # Interactive Chess with XArm Lite6
 Dive into the future of board games with our cutting-edge project: an interactive chess game where you match wits against a robotic arm. Developed for the NVIDIA Jetson Nano and leveraging the power of Python, this project brings the classic game of chess into the realm of robotics and computer vision. Utilizing the precision of the Realsense D435 camera for image processing, we've created a system that not only recognizes each piece on the chessboard but also calculates their positions relative to the XArm lite6 robotic arm. Integrated with an advanced chess engine, the robotic arm contemplates and executes moves with strategic prowess, offering players of all levels a challenging and educational experience.
 
+
+
+https://github.com/ahmadgh99/RoboticChess/assets/125828484/f1cedf0d-059c-496d-acd2-1941255e3fd6
+
+https://github.com/ahmadgh99/RoboticChess/assets/125828484/b6383675-e6f1-40d1-b221-8c7bee1e330d
+
+
+
+
 # Installation
 Ensure your system is ready to run this innovative chess match by installing the following packages and libraries:
 # Required packages and libraries
