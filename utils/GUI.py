@@ -1,7 +1,8 @@
 import os
-os.environ["KIVY_NO_CONSOLELOG"] = "1"
+#os.environ["KIVY_NO_CONSOLELOG"] = "1"
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
+from kivy.animation import Animation
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.core.image import Image as CoreImage
@@ -17,8 +18,11 @@ from kivy.graphics import Color, Rectangle
 from kivy.uix.modalview import ModalView
 import chess_viz as cviz
 from PIL import Image as PilImage
+from kivy.core.audio import SoundLoader
+import time
 
 symbols_folder = "/Users/ahmadghanayem/Desktop/Technion/Project 2/chess/PIECES"
+sounds_folder = "/Users/ahmadghanayem/Desktop/Technion/Project 2/chess/sounds"
 
 class GUI():
 
@@ -89,6 +93,13 @@ class GUI():
 
         # Create an instance of the internal KivyApp
         self.kivy_app = self.KivyApp(self)
+        
+        #Load Sounds
+        self.check_sound = SoundLoader.load(sounds_folder+'/move-check.mp3')
+        self.move_sound = SoundLoader.load(sounds_folder+'/move-self.mp3')
+        self.capture_sound = SoundLoader.load(sounds_folder+'/capture.mp3')
+        self.notify_sound = SoundLoader.load(sounds_folder+'/notify.mp3')
+
 
     def quit(self):
         App.get_running_app().stop()
@@ -108,13 +119,23 @@ class GUI():
     def update_video_size(self, new_size):
         self.image.size = new_size
 
-    def add_message(self, text):
+    def add_message(self, text, font_size = '15sp', Flash = False):
         # Schedule the _update_gui method to be called on the main thread
-        Clock.schedule_once(lambda dt: self._update_gui(text), 0)
+        Clock.schedule_once(lambda dt: self._update_gui(text, font_size = font_size, Flash = Flash), 0)
 
-    def _update_gui(self, text):
-        message = Label(text=text, color=(0, 0, 0, 1), size_hint_y=None, height=50)
+    def _update_gui(self, text, font_size, Flash):
+        # Create a Label with larger font size
+        message = Label(text=text, color=(0, 0, 0, 1), size_hint_y=None, height=50, font_size = font_size)
+
+        # Add the label to the messages layout
         self.messages.add_widget(message)
+
+        # Create an animation to make the label flash
+        if Flash:
+            # This will alternate the label's opacity between 1 and 0 over a 1-second duration
+            animation = Animation(opacity=0, duration=1) + Animation(opacity=1, duration=0.7)
+            animation.repeat = True  # Make the animation repeat indefinitely
+            animation.start(message)
 
     def update_frame(self, frame):
         # Convert frame to texture
@@ -132,6 +153,24 @@ class GUI():
         Clock.schedule_once(self._create_promotion_popup)
         self.user_choice_event.wait()  # Wait here until the user makes a choice
         return self.promotion_choice
+        
+    def display_wrong_move(self,from_square, to_square, pieces):
+        global symbols_folder
+        self.playSound(4)
+        pil_image = cviz.draw_chess_game(pieces, symbols_folder,from_square,to_square)
+        Clock.schedule_once(lambda dt:self._switch_image(pil_image))
+    
+    def playSound(self,sound = 0):
+        if sound == 0:
+            return
+        if sound == 1:
+            self.check_sound.play()
+        if sound == 2:
+            self.move_sound.play()
+        if sound == 3:
+            self.capture_sound.play()
+        if sound == 4:
+            self.notify_sound.play()
 
     def _create_promotion_popup(self, dt):
         def on_button_click(instance):
